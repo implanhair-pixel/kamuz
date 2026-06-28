@@ -74,8 +74,8 @@ export default function ProfilePage({ onNavigate }: Props) {
     if (!session?.user?.id) return;
     
     try {
-      // Get saved words from localStorage via AppContext
-      const localSavedWords = localStorage.getItem('saved-words');
+      // Get saved words from localStorage using the correct key
+      const localSavedWords = localStorage.getItem('kurdamuz_saved_words');
       if (!localSavedWords) return;
       
       const parsed = JSON.parse(localSavedWords);
