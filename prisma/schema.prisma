@@ -18,6 +18,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   voiceRecordings VoiceRecording[]
+  savedWords      SavedWord[]
 }
 
 model VoiceRecording {
@@ -84,4 +85,18 @@ model AdminLog {
   targetId  String?
   detail    String?
   createdAt DateTime @default(now())
+}
+
+model SavedWord {
+  id        String   @id @default(cuid())
+  userId    String
+  vocabId   String   // The vocabulary word ID (e.g., "v_hello")
+  savedAt   String   // ISO date string (YYYY-MM-DD) for easy querying
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vocabId])
+  @@index([userId])
+  @@index([vocabId])
 }
