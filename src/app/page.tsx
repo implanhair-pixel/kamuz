@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
@@ -30,14 +29,23 @@ import AboutPage from '@/components/AboutPage';
 
 type View = 'home' | 'paths' | 'vocabulary' | 'compare' | 'stats' | 'srs' | 'voices' | 'admin' | 'privacy' | 'terms' | 'contact' | 'profile' | 'login' | 'about';
 
-export default function Home() {
+const VALID_VIEWS: View[] = ['home','paths','vocabulary','compare','stats','srs','voices','admin','privacy','terms','contact','profile','login','about'];
+
+function HomeContent() {
   const { t } = useApp();
-  const searchParams = useSearchParams();
-  const viewParam = searchParams.get('view') as View | null;
-  const [view, setView] = useState<View>(viewParam || 'home');
+  const [view, setView] = useState<View>('home');
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+
+  // Read ?view= from URL safely after mount (no useSearchParams needed)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('view');
+    if (v && VALID_VIEWS.includes(v as View)) {
+      setView(v as View);
+    }
+  }, []);
 
   // Smooth scroll to top on view change
   const handleNavigate = useCallback((id: string) => {
@@ -169,5 +177,13 @@ export default function Home() {
       />
       <ScrollToTopButton />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }
