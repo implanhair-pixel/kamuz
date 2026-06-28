@@ -26,6 +26,8 @@ const vazir = Vazirmatn({
   display: "swap",
 });
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "کوردآموز — Learn Kurdish (Sorani, Kalhori & Kurmanji)",
   description:
