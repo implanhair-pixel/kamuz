@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/contexts/AppContext';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
@@ -31,7 +32,9 @@ type View = 'home' | 'paths' | 'vocabulary' | 'compare' | 'stats' | 'srs' | 'voi
 
 export default function Home() {
   const { t } = useApp();
-  const [view, setView] = useState<View>('home');
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get('view') as View | null;
+  const [view, setView] = useState<View>(viewParam || 'home');
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
