@@ -69,6 +69,35 @@ export default function ProfilePage({ onNavigate }: Props) {
     }
   }, [session?.user?.id]);
 
+  // Sync localStorage saved words to database
+  const syncLocalSavedWords = useCallback(async () => {
+    if (!session?.user?.id) return;
+    
+    try {
+      // Get saved words from localStorage via AppContext
+      const localSavedWords = localStorage.getItem('saved-words');
+      if (!localSavedWords) return;
+      
+      const parsed = JSON.parse(localSavedWords);
+      if (!Array.isArray(parsed) || parsed.length === 0) return;
+      
+      const vocabIds = parsed.map((w: any) => w.vocabId);
+      const today = parsed[0]?.savedAt || new Date().toISOString().split('T')[0];
+      
+      // Sync to database
+      await fetch('/api/user/saved-words', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vocabIds, savedAt: today })
+      });
+      
+      // Refresh saved words from database
+      fetchSavedWords();
+    } catch (error) {
+      console.error('Failed to sync local saved words:', error);
+    }
+  }, [session?.user?.id, fetchSavedWords]);
+
   const fetchUserVoices = useCallback(async () => {
     if (!session?.user?.id) return;
     setLoadingVoices(true);
@@ -90,6 +119,11 @@ export default function ProfilePage({ onNavigate }: Props) {
   useEffect(() => {
     fetchSavedWords();
   }, [fetchSavedWords]);
+
+  // Sync local saved words to database on mount
+  useEffect(() => {
+    syncLocalSavedWords();
+  }, [syncLocalSavedWords]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
