@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shuffle, RefreshCw, ArrowRight, BookOpen } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
@@ -50,14 +50,21 @@ const DIALECTS: DialectColumn[] = [
 
 export default function DialectCompare() {
   const { t, lang, dir } = useApp();
-  // Start with a random word on mount.
+  // Start with a random word on mount (client-side only to avoid hydration mismatch)
   const [seed, setSeed] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const currentWord = useMemo(() => {
-    // Deterministic-but-rotating pick so SSR and client agree per-render.
-    const idx = (seed + Math.floor(Date.now() / 1000)) % vocabulary.length;
+    // Only use random selection after mounted to avoid SSR/client mismatch
+    const idx = mounted 
+      ? (seed + Math.floor(Date.now() / 1000)) % vocabulary.length 
+      : 0;
     return vocabulary[idx] ?? vocabulary[0];
-  }, [seed]);
+  }, [seed, mounted]);
 
   const shuffle = useCallback(() => {
     setSeed((s) => s + 1 + Math.floor(Math.random() * 1000));
