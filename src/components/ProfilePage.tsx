@@ -25,6 +25,11 @@ interface UserVoice {
   createdAt: string;
 }
 
+interface SavedWord {
+  vocabId: string;
+  savedAt: string;
+}
+
 interface Props {
   onNavigate?: (id: string) => void;
 }
@@ -35,7 +40,9 @@ export default function ProfilePage({ onNavigate }: Props) {
   const { data: session, status } = useSession();
   const [profileData, setProfileData] = useState<{ voiceCount: number; createdAt: string } | null>(null);
   const [userVoices, setUserVoices] = useState<UserVoice[]>([]);
+  const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
+  const [loadingSavedWords, setLoadingSavedWords] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<UserVoice | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -45,6 +52,20 @@ export default function ProfilePage({ onNavigate }: Props) {
         .then((r) => (r.ok ? r.json() : null))
         .then(setProfileData)
         .catch(() => {});
+    }
+  }, [session?.user?.id]);
+
+  const fetchSavedWords = useCallback(async () => {
+    if (!session?.user?.id) return;
+    setLoadingSavedWords(true);
+    try {
+      const res = await fetch('/api/user/saved-words');
+      const data = await res.json();
+      if (res.ok) setSavedWords(data.savedWords || []);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingSavedWords(false);
     }
   }, [session?.user?.id]);
 
@@ -65,6 +86,10 @@ export default function ProfilePage({ onNavigate }: Props) {
   useEffect(() => {
     fetchUserVoices();
   }, [fetchUserVoices]);
+
+  useEffect(() => {
+    fetchSavedWords();
+  }, [fetchSavedWords]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -271,6 +296,64 @@ export default function ProfilePage({ onNavigate }: Props) {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+
+            {/* User's saved words */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass rounded-2xl border border-white/10 p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/15 text-[var(--accent)] flex items-center justify-center">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-bold">Saved Words</h3>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onNavigate?.('vocabulary')}
+                  className="rounded-lg border-white/10 glass hover:bg-white/5 text-xs"
+                >
+                  Browse vocabulary
+                </Button>
+              </div>
+
+              {loadingSavedWords ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : savedWords.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p>You have not saved any words yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto pe-1">
+                  {savedWords.map((sw) => {
+                    const vVocab = vocabById.get(sw.vocabId);
+                    const vWord = vVocab
+                      ? getText({ en: vVocab.en, fa: vVocab.fa, ku: vVocab.ku }, lang)
+                      : sw.vocabId;
+                    return (
+                      <div
+                        key={sw.vocabId}
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/5 border border-white/5"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate text-sm">{vWord}</p>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                            <span>Saved: {sw.savedAt}</span>
+                          </div>
                         </div>
                       </div>
                     );
