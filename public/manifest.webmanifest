@@ -1,0 +1,17 @@
+{
+  "name": "KurdAmuz — Learn Kurdish",
+  "short_name": "KurdAmuz",
+  "description": "Free, modern Kurdish language learning platform with flashcards, quizzes, spaced repetition and dialect comparison.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#0a0a0f",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

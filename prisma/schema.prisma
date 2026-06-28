@@ -1,0 +1,87 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  image        String?
+  passwordHash String?  // For local email/password auth (null if OAuth only)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  voiceRecordings VoiceRecording[]
+}
+
+model VoiceRecording {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  dialect     String   @default("sorani")
+  fileName    String
+  filePath    String
+  duration    Float    @default(0)
+  ipHash      String
+  nickname    String   @default("ناشناس")
+  userId      String?
+  // The vocabulary word this recording pronounces (e.g. "v_hello").
+  // Required at upload — recordings are tied to known vocab entries only.
+  vocabId     String
+  likes       Int      @default(0)
+  dislikes    Int      @default(0)
+  // Legacy fields kept for backward-compatibility with existing data.
+  avgRating   Float    @default(0)
+  totalRatings Int     @default(0)
+  totalScore   Float   @default(0)
+  isDeleted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user    User?           @relation(fields: [userId], references: [id])
+  ratings VoiceRating[]
+}
+
+model VoiceRating {
+  id          String   @id @default(cuid())
+  voiceId     String
+  // 'like' | 'dislike' — replaces the old 1..5 score
+  kind        String   @default("like")
+  userId      String?
+  ipHash      String
+  createdAt   DateTime @default(now())
+
+  voice VoiceRecording @relation(fields: [voiceId], references: [id], onDelete: Cascade)
+
+  // One vote per voice per user. We don't enforce an IP-based unique
+  // constraint because multiple authenticated users can share an IP
+  // (same WiFi, VPN, corporate network, etc.) and should each be able
+  // to vote independently.
+  @@unique([voiceId, userId])
+}
+
+model RateLimit {
+  id        String   @id @default(cuid())
+  ipHash    String
+  action    String
+  count     Int      @default(1)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ipHash, action])
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  action    String
+  targetId  String?
+  detail    String?
+  createdAt DateTime @default(now())
+}
