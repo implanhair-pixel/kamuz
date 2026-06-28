@@ -10,7 +10,6 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import { useSession } from 'next-auth/react';
 import type {
   Lang,
   ThemeState,
@@ -234,7 +233,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /* ── i18n ── */
   const [lang, setLangState] = useState<Lang>('en');
   const [mounted, setMounted] = useState(false);
-  const { data: session } = useSession();
 
   useEffect(() => {
     setLangState(getInitialLang());
@@ -467,64 +465,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /* ── saved words ── */
   const [savedWords, setSavedWords] = useState<SavedWord[]>([]);
-  const [syncingSavedWords, setSyncingSavedWords] = useState(false);
 
   useEffect(() => {
     if (!mounted) return;
     setSavedWords(lsGet<SavedWord[]>(STORAGE_KEYS.SAVED_WORDS, []));
   }, [mounted]);
 
-  // Sync saved words with database when user is logged in
-  useEffect(() => {
-    if (!mounted || !session?.user?.id) return;
-    
-    const syncWithDatabase = async () => {
-      try {
-        setSyncingSavedWords(true);
-        const res = await fetch('/api/user/saved-words');
-        const data = await res.json();
-        if (res.ok && data.savedWords) {
-          // Merge database saved words with local ones
-          // Database takes precedence for consistency
-          setSavedWords(data.savedWords);
-          lsSet(STORAGE_KEYS.SAVED_WORDS, data.savedWords);
-        }
-      } catch (error) {
-        console.error('Failed to sync saved words:', error);
-      } finally {
-        setSyncingSavedWords(false);
-      }
-    };
-
-    syncWithDatabase();
-  }, [mounted, session?.user?.id]);
-
   useEffect(() => {
     if (!mounted) return;
     lsSet(STORAGE_KEYS.SAVED_WORDS, savedWords);
   }, [savedWords, mounted]);
-
-  // Sync to database when saved words change (debounced)
-  useEffect(() => {
-    if (!session?.user?.id || syncingSavedWords) return;
-    
-    const timeoutId = setTimeout(async () => {
-      try {
-        const vocabIds = savedWords.map((w) => w.vocabId);
-        const today = savedWords[0]?.savedAt || new Date().toISOString().split('T')[0];
-        
-        await fetch('/api/user/saved-words', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vocabIds, savedAt: today })
-        });
-      } catch (error) {
-        console.error('Failed to sync saved words to database:', error);
-      }
-    }, 1000); // 1 second debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [savedWords, session?.user?.id, syncingSavedWords]);
 
   const toggleSavedWord = useCallback((vocabId: string) => {
     setSavedWords((prev) => {
